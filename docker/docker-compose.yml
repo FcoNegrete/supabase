@@ -4,6 +4,9 @@
 #   Stop:               docker compose down
 #   Destroy:            docker compose -f docker-compose.yml -f ./dev/docker-compose.dev.yml down -v --remove-orphans
 #   Reset everything:  ./reset.sh
+#
+# MODIFICADO PARA DOKPLOY: servicio vector eliminado y db sin depends_on vector
+# (ver docs/SUPABASE_DOKPLOY_DESACTIVAR_VECTOR.md)
 
 name: supabase
 
@@ -434,19 +437,17 @@ services:
     healthcheck:
       test:
         [
-        "CMD",
-        "pg_isready",
-        "-U",
-        "postgres",
-        "-h",
-        "localhost"
+          "CMD",
+          "pg_isready",
+          "-U",
+          "postgres",
+          "-h",
+          "localhost"
         ]
       interval: 5s
       timeout: 5s
       retries: 10
-    depends_on:
-      vector:
-        condition: service_healthy
+    # depends_on vector removed so stack can start without vector (Dokploy fix)
     environment:
       POSTGRES_HOST: /var/run/postgresql
       PGPORT: ${POSTGRES_PORT}
@@ -463,38 +464,11 @@ services:
         "-c",
         "config_file=/etc/postgresql/postgresql.conf",
         "-c",
-        "log_min_messages=fatal" # prevents Realtime polling queries from appearing in logs
+        "log_min_messages=fatal"
       ]
 
-  vector:
-    container_name: supabase-vector
-    image: timberio/vector:0.53.0-alpine
-    restart: unless-stopped
-    volumes:
-      - ./volumes/logs/vector.yml:/etc/vector/vector.yml:ro,z
-      - ${DOCKER_SOCKET_LOCATION}:/var/run/docker.sock:ro,z
-    healthcheck:
-      test:
-        [
-          "CMD",
-          "wget",
-          "--no-verbose",
-          "--tries=1",
-          "--spider",
-          "http://vector:9001/health"
-        ]
-      timeout: 5s
-      interval: 5s
-      retries: 3
-    environment:
-      LOGFLARE_PUBLIC_ACCESS_TOKEN: ${LOGFLARE_PUBLIC_ACCESS_TOKEN}
-    command:
-      [
-        "--config",
-        "/etc/vector/vector.yml"
-      ]
-    security_opt:
-      - "label=disable"
+  # vector service REMOVED - was causing "container supabase-vector is unhealthy" in Dokploy
+  # See docs/SUPABASE_DOKPLOY_DESACTIVAR_VECTOR.md
 
   # Update the DATABASE_URL if you are using an external Postgres database
   supavisor:
