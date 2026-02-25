@@ -7,7 +7,8 @@
 #
 # MODIFICADO PARA DOKPLOY: servicio vector eliminado, db sin depends_on vector;
 # servicio analytics eliminado y ningún servicio depende de analytics (evita "container supabase-analytics is unhealthy").
-# Ver docs/SUPABASE_DOKPLOY_DESACTIVAR_VECTOR.md
+# db: healthcheck con start_period: 90s para primer arranque (init tarda ~35-40 s).
+# Ver docs/SUPABASE_DOKPLOY_DESACTIVAR_VECTOR.md y docs/SUPABASE_DOKPLOY_TROUBLESHOOTING.md
 
 name: supabase
 
@@ -383,9 +384,10 @@ services:
           "-h",
           "localhost"
         ]
-      interval: 5s
-      timeout: 5s
-      retries: 10
+      interval: 10s
+      timeout: 10s
+      retries: 12
+      start_period: 90s
     # depends_on vector removed so stack can start without vector (Dokploy fix)
     environment:
       POSTGRES_HOST: /var/run/postgresql
